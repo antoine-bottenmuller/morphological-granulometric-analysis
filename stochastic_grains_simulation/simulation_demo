@@ -2,7 +2,7 @@
 
 import numpy as np
 from utils import show, normalized, show_circles, build_density_histogram
-from stochastic_grains_generator import generate_random_grains, regenerate_grains, get_visible_circles_only_fast
+from stochastic_grains_simulation import generate_random_grains, regenerate_grains, get_visible_circles_only_fast
 
 
 #%% test: generating image of random grains
