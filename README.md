@@ -3,7 +3,7 @@ Full code and resources of research project: granulometric analysis of maltodext
 
 The Curvature Analysis Method (CAM) is a morphological-based segmentation method developed to detect circular shapes in grayscale images for granulometry tasks. Check out folder "curvature_analysis_method" for code.  
 A sample of twenty real images of maltodextrin particules observed by scanning electron microscopy given as the object of study for this research project is provided to test the CAM. Check out folder "real_images_sample".  
-A stochastic grains simulation model has also been created to generate realistic random images of grains for which the ground truth is known, aiming to validate the CAM. Check out folder "random_grains_generator" for code.  
+A stochastic grains simulation model has also been created to generate realistic random images of grains for which the ground truth is known, aiming to validate the CAM. Check out folder "stochastic_grains_generator" for code.  
 
 The related study showed that the CAM gives much more accurate segmentation results, in terms of detection accuracy and Particule Size Distribution (PSD), than the traditional Circular Hough Transform (CHT) and the Stochastic Watershed (SW) give. These results are provided in the related papers published (see below).
 
