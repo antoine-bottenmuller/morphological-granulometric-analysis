@@ -1,0 +1,61 @@
+## Libraries
+
+import numpy as np
+from utils import show, normalized, show_circles, build_density_histogram
+from grains_generator_functions import generate_random_grains, regenerate_grains, get_visible_circles_only_fast
+
+
+#%% test: generating image of random grains
+
+# defining hyperparameters
+image_dims = (960, 1280)
+nb_avg_grains = 200 #400
+normal_laws = np.array([[30,8,0.7],[60,13,0.3]]) # random law behind the grains radii : (mean, sqrt, weight in the family of laws)
+light_dir = np.array([-0.80, -0.50], dtype=np.float64) #None # chosen light direction : (x, y) with x^2 + y^2 <= 1
+
+# generating stochastic image
+O, infos_map, L_RADIUS, L_CENTER, SERIES = generate_random_grains(image_dims, nb_avg_grains, normal_laws, light_dir)
+
+# showing main generated image
+show(O, "Randomly generated grains", False)
+
+# showing grains' main characteristics
+show(normalized(infos_map[:,:,0]), title="Radius of grains")
+show(normalized(infos_map[:,:,1]), title="x position of the center of grains")
+show(normalized(infos_map[:,:,2]), title="y position of the center of grains")
+show(normalized(infos_map[:,:,3]), title="Index of grains")
+show(normalized(infos_map[:,:,4]), title="Resulting image before noising and blurring")
+
+
+#%% re-drawing the same image with another light direction
+
+# defining new light direction
+light_dir = [1.00, 0.00]
+
+# re-generating image with the same properties than the previous one but light direction
+U, information_map = regenerate_grains(image_dims, L_RADIUS, L_CENTER, SERIES, light_dir)
+
+# showing main re-generated image
+show(U, "Re-created image", False)
+
+
+#%% extracting circles of visible grains only from all the created grains
+
+# showing all the true corresponding circles
+show_circles(O, L_CENTER, L_RADIUS)
+
+# getting circles from visible grains only
+idx_on_map_visible, la_radi, la_cent = get_visible_circles_only_fast(infos_map)
+
+# showing the corresponding visible circles only
+show_circles(O, la_cent, la_radi)
+
+
+#%% building a quick histogram of resulting Particle Size Distribution
+
+build_density_histogram(la_radi, nb_intervals=20, 
+                        lim_x=None, lim_y=None, 
+                        volume=False, 
+                        line_curve=True, interpol=False, kernel_density=True, 
+                        title="PSD of simulated image with visible grains only")
+
