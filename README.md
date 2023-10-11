@@ -9,7 +9,7 @@ The related study showed that the CAM gives much more accurate segmentation resu
 
 Other ressources are available in folder "work_production": presentation slides and two posters recapping the main lines of the project.
 
-Three minutes pitch for school available at [Youtube - Mines Saint-Etienne](https://www.youtube.com/watch?v=pI0GmKkgZ7w)
+Three minutes pitch for school is available at [Youtube - Mines Saint-Etienne](https://www.youtube.com/watch?v=pI0GmKkgZ7w)
 
 Papers published:
 * Antoine Bottenmuller et al., "Granulometric Analysis of Maltodextrin Particles Observed by Scanning Electron Microscopy," 2023 IEEE 13th International Conference on Pattern Recognition Systems (ICPRS), Guayaquil, Ecuador, 2023, pp. 1-7, doi: 10.1109/ICPRS58416.2023.10179067
