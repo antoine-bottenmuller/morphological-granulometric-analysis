@@ -1,5 +1,5 @@
 # morphological-granulometric-analysis
-Full code and resources of the research project: granulometric analysis of maltodextrin particles observed by scanning electron microscopy
+Full code and resources of research project: granulometric analysis of maltodextrin particles observed by scanning electron microscopy.
 
 The Curvature Analysis Method (CAM) is a morphological-based segmentation method developed to detect circular shapes in grayscale images for granulometry tasks. Check folder "curvature_anaylis_method" for code.  
 A sample of twenty real images of maltodextrin particules observed by scanning electron microscopy given as the object of study for this research project is provided to test the CAM. Check folder "real_images_sample".  
