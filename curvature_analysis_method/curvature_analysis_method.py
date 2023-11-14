@@ -193,7 +193,7 @@ def distance_from_local_max(image, largeur):
 def k_means(image, k, i):
     if(i>=0 and i<k):
         data = np.expand_dims(image.flatten(), axis=1)
-        kmeans = KMeans(n_clusters = k).fit(data) # Kmeans object
+        kmeans = KMeans(n_clusters=k, init='k-means++', n_init='auto').fit(data) # Kmeans object
         labels = kmeans.labels_
         labels.shape = image.shape # reshape labels
         centers = kmeans.cluster_centers_[:,0] # values of centers
