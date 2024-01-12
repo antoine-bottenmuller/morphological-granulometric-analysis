@@ -9,7 +9,7 @@ from curvature_analysis_method import CAM_circles_2D
 
 num_image = 1
 
-images_folder_path = "../images_sample/"
+images_folder_path = "../real_images_sample/"
 image_path = images_folder_path + str(num_image) + ".bmp"
 
 image = import_image(image_path, crop_image=[[-1,960],[-1,-1]])
