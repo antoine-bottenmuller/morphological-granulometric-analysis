@@ -1,34 +1,49 @@
-## Libraries
+# Demo for Curvature Analysis Method (CAM) 
+# which allows to detect circular shapes 
+# in 2D grayscale images of any size 
+# through the analysis of edge curvature
 
-import numpy as np
-from utils import import_image, show, show_circles, build_density_histogram
+# Libraries
+
+from utils import import_2D_image, show, show_circles, build_density_histogram
 from curvature_analysis_method import CAM_circles_2D
 
 
-#%% importing an image from the folder of images sample
+#%% import an image from given folder and crop it
 
 num_image = 1
 
 images_folder_path = "../real_images_sample/"
 image_path = images_folder_path + str(num_image) + ".bmp"
 
-image = import_image(image_path, crop_image=[[-1,960],[-1,-1]])
+image = import_2D_image(image_path, crop_image=[[-1,960],[-1,-1]])
 
 show(image)
 
 
-#%% test: detecting cercles with CAM in a real SEM image of maltodextrin particles
+#%% test: detect cercles with CAM in a real SEM image of maltodextrin particles
 
-l_centers, l_radii = CAM_circles_2D(image)
+# please set appropriate parameters (see function description)
+l_centers, l_radii = CAM_circles_2D(
+    image, 
+    resolution = 0.5, 
+    cleaning_power = 1.0, 
+    curvature_sensitivity = 1.0, 
+    circle_merging_power = 1.0, 
+    circle_accuracy_power = 1.0, 
+    min_radius_ratio = 0.01, 
+    max_radius_ratio = 0.50
+)
 
-show_circles(image, l_centers, l_radii, out=False)
+show_circles(image, l_centers, l_radii)
 
 
-#%% building a quick histogram of resulting Particle Size Distribution
+#%% build a quick histogram of resulting Particle Size Distribution (PSD)
 
-build_density_histogram(l_radii, nb_intervals=60, 
+# figures can be vectorized and exported by setting "export" argument to "True"
+build_density_histogram(l_radii, nb_intervals=20, 
                         lim_x=None, lim_y=None, 
                         volume=False, 
-                        line_curve=True, interpol=False, kernel_density=True, 
-                        title="PSD with CAM")
+                        line_curve=True, interpol=False, kernel_density=True, #export=True, 
+                        title="Particle Size Distribution (PSD) with CAM")
 
