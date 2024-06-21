@@ -11,6 +11,6 @@ Other ressources are available in folder "work_production": presentation slides 
 
 Three minutes pitch for school is available at [Youtube - Mines Saint-Etienne](https://www.youtube.com/watch?v=pI0GmKkgZ7w)
 
-Papers published:
-* Antoine Bottenmuller et al., "Granulometric Analysis of Maltodextrin Particles Observed by Scanning Electron Microscopy," 2023 IEEE 13th International Conference on Pattern Recognition Systems (ICPRS), Guayaquil, Ecuador, 2023, pp. 1-7, doi: 10.1109/ICPRS58416.2023.10179067
+Communication:
+* Antoine Bottenmuller et al., "Granulometric Analysis of Maltodextrin Particles Observed by Scanning Electron Microscopy", 2023 IEEE 13th International Conference on Pattern Recognition Systems (ICPRS), Guayaquil, Ecuador, 2023, pp. 1-7, doi: 10.1109/ICPRS58416.2023.10179067
 * Antoine Bottenmuller et al., "Une approche pour l’analyse granulométrique de particules condensées sur des images en niveaux de gris", 2023 29ème Colloque Francophone de Traitement du Signal et des Images (GRETSI), Grenoble, France, 2023, pp. 1153-1156, web: [HAL EMSE CNRS - 04195651](https://hal-emse.ccsd.cnrs.fr/emse-04195651/)
