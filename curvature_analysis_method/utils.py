@@ -432,7 +432,7 @@ def build_density_histogram(
         if type(end)==type(Figure()): # do not end
             ax = end.gca()
         else: # build and end
-            fn = Path("~/{}.svg".format(gtitle)).expanduser()
+            fn = Path("./{}.svg".format(gtitle)).expanduser()
             fg = Figure()
             ax = fg.gca()
         
@@ -452,7 +452,7 @@ def build_density_histogram(
         ax.set_ylabel("{} (density)".format("number"*(not(volume))+"volume"*volume))
         
         # here to set xlim and ylim
-        if lim_x is not None:
+        if limx is not None:
             ax.set_xlim(limx[0],limx[1])
         if lim_y is not None:
             ax.set_ylim(lim_y[0],lim_y[1])
