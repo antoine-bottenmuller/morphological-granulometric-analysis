@@ -830,7 +830,7 @@ def CAM_circles_2D(
     # normalize image
     image = normalized(image, output_dtype=np.float64)
 
-    # add small noize to image
+    # add small noize to image (std=0.01)
     noize = ndimage.gaussian_filter(np.abs(np.random.normal(0, 0.01, size=image.shape)), sigma_preprocess)
     image = image + noize
 
