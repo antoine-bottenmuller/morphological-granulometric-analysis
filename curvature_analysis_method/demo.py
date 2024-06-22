@@ -3,13 +3,13 @@
 # in 2D grayscale images of any size 
 # through the analysis of edge curvature
 
-# Libraries
+# Import useful functions
 
 from utils import import_2D_image, show, show_circles, build_density_histogram
 from CAM import CAM_circles_2D
 
 
-#%% import an image from given folder and crop it
+#%% import an image from given folder and crop it if needed
 
 num_image = 1
 
@@ -23,7 +23,7 @@ show(image)
 
 #%% test: detect cercles with CAM in a real SEM image of maltodextrin particles
 
-# please set appropriate parameters (see function description)
+# please set appropriate parameters (check function description)
 l_centers, l_radii = CAM_circles_2D(
     image, 
     resolution = 0.5, 
@@ -38,12 +38,19 @@ l_centers, l_radii = CAM_circles_2D(
 show_circles(image, l_centers, l_radii)
 
 
-#%% build a quick histogram of resulting Particle Size Distribution (PSD)
+#%% build and show a quick histogram of resulting Particle Size Distribution (PSD)
 
 # figures can be vectorized and exported by setting "export" argument to "True"
-build_density_histogram(l_radii, nb_intervals=20, 
-                        lim_x=None, lim_y=None, 
-                        volume=False, 
-                        line_curve=True, interpol=False, kernel_density=True, #export=True, 
-                        title="Particle Size Distribution (PSD) with CAM")
+build_density_histogram(
+    l_radii, 
+    nb_intervals = 20, 
+    lim_x = None, 
+    lim_y = None, 
+    volume = False, 
+    line_curve = True, 
+    interpol = False, 
+    kernel_density = True, 
+    #export = True, 
+    title = "Particle Size Distribution (PSD)"
+)
 
