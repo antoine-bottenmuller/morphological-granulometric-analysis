@@ -13,8 +13,8 @@ from CAM import CAM_circles_2D
 
 num_image = 1
 
-images_folder_path = "../real_images_sample/"
-image_path = images_folder_path + str(num_image) + ".bmp"
+folder_path = "../sample/"
+image_path = folder_path + str(num_image) + ".bmp"
 
 image = import_2D_image(image_path, crop_image=[[-1,960],[-1,-1]])
 
