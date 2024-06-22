@@ -6,7 +6,7 @@
 # Libraries
 
 from utils import import_2D_image, show, show_circles, build_density_histogram
-from curvature_analysis_method import CAM_circles_2D
+from CAM import CAM_circles_2D
 
 
 #%% import an image from given folder and crop it
