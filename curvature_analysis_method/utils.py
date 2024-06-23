@@ -36,14 +36,19 @@ def import_2D_image(image_path:str, crop_image:bool=None) -> np.ndarray:
 # Get an adapted image to show as uint8 in [|0,255|], regarding a minimum value (v_min) and a miximum one (v_max)
 
 def get_show(img:np.ndarray, v_min:Optional[float]=None, v_max:Optional[float]=None) -> np.ndarray:
-    out_dtype = np.uint8
-    if img.dtype == bool:
-        return img.astype(out_dtype)*255
-    if img.dtype == out_dtype and v_min is None and v_max is None:
-        return img.copy()
     if img.ndim < 1:
         raise ValueError(f"Array must be of dimension >0.")
-    if v_min is not None or v_max is not None:
+    out_dtype = np.uint8
+    if img.dtype == bool:
+        img = img.astype(out_dtype)
+    elif img.dtype == out_dtype:
+        if v_min is not None or v_max is not None:
+            img = img.copy()
+        if v_min is None:
+            v_min = 0 # min is necessarily 0
+        if v_max is None:
+            v_max = np.iinfo(out_dtype).max
+    elif v_min is not None or v_max is not None:
         img = img.copy()
     if img.ndim == 1:
         img = img[np.newaxis]
@@ -61,7 +66,7 @@ def get_show(img:np.ndarray, v_min:Optional[float]=None, v_max:Optional[float]=N
     if v_min == v_max:
         return np.zeros(shape=img.shape, dtype=out_dtype)
     out = np.empty(shape=img.shape, dtype=out_dtype)
-    return np.multiply(img-v_min, 255/(v_max-v_min), out=out, casting='unsafe')
+    return np.multiply(img-v_min, np.iinfo(out_dtype).max/(v_max-v_min), out=out, casting='unsafe')
 
 
 # Show an image or a set of images
