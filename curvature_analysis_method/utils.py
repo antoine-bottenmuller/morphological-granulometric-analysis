@@ -37,6 +37,8 @@ def import_2D_image(image_path:str, crop_image:bool=None) -> np.ndarray:
 
 def get_show(img:np.ndarray, v_min:Optional[float]=None, v_max:Optional[float]=None) -> np.ndarray:
     out_dtype = np.uint8
+    if img.dtype == bool:
+        return img.astype(out_dtype)*255
     if img.dtype == out_dtype and v_min is None and v_max is None:
         return img.copy()
     if img.ndim < 1:
