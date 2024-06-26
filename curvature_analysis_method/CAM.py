@@ -315,7 +315,6 @@ def remove_corner_pixels(skeleton:np.ndarray, blockSize:int) -> None:
     """
     # We use Harris corner detector from OpenCV
     corner_map = cv.cornerHarris(skeleton.astype(np.float32), blockSize, 3, 0.04)
-    #show(normalized(corner_map),"corner map",1)
     labels, nb_labels = ndimage.label(skeleton, structure=np.ones(shape=(3,3)))
     end_pt = (point_types(skeleton)==2) * labels
     for i in range(1,nb_labels+1):
@@ -510,7 +509,7 @@ def remove_bends(skeleton:np.ndarray, bends:list, length:int) -> None:
     Parameters:
     * skeleton: 2D binary image (bool) of edge skeleton ;
     * bends: list of connected bend point paths (use 'get_bends' func.) ;
-    * length: diameter of the area to remove around each bend point.
+    * length: radius of the square area to remove around each bend point.
     """
     for bend in bends:
         for i,j in bend:
@@ -586,6 +585,47 @@ def get_circles(skeleton:np.ndarray) -> Tuple[list, np.ndarray, np.ndarray]:
         l_radius[i] = radius
     return l_points, l_center, l_radius
 
+
+# Function to determine the sign of the gradient of an image from outside to inside a circle arc
+def get_edge_sign(p:list, c:tuple, image:np.ndarray, rad_scan:float=3) -> int:
+    """
+    Returns the sign of the gray gradient from outside to inside the circle arc described by points p and center c. 
+    'rad_scan' is the given scanning length from the edge to the center to compute gray values on image.
+    """
+    if rad_scan == 0 or image is None:
+        return 0
+    rad_scan = int(np.ceil(np.abs(rad_scan)))
+    nor_range = np.arange(1, rad_scan+1).reshape(rad_scan, 1, 1)
+    p = np.asarray(p) # argwhere pixels, with shape (k1, ndim)
+    vec_int_1 = np.asarray(c) - p
+    nor_vec_1 = np.sqrt(np.sum(vec_int_1**2, axis=1, keepdims=True))
+    nor_nul_1 = nor_vec_1 == 0
+    vec_int_1 = vec_int_1 * ~nor_nul_1 / (nor_vec_1 + nor_nul_1)
+    del nor_vec_1, nor_nul_1
+    vec_int_1 = vec_int_1 * nor_range
+    coo_int_1 = np.round(p + vec_int_1).astype(np.int64).T # (ndim, k1, rad_scan)
+    coo_ext_1 = np.round(p - vec_int_1).astype(np.int64).T # (ndim, k1, rad_scan)
+    del vec_int_1
+    int_1 = np.sum(image[tuple(coo_int_1)])
+    del coo_int_1
+    ext_1 = np.sum(image[tuple(coo_ext_1)])
+    del coo_ext_1
+    return int(np.sign(int_1-ext_1))
+
+# Function to determine the signs of the gradient of an image from outside to inside all the circle arcs
+def get_edge_signs(l_points:list, l_center:list|np.ndarray, image:np.ndarray, rad_scan:float=3) -> list|None:
+    """
+    Returns the list of signs of the gray gradient from outside to inside the circle arcs described by points in l_points and centers in l_center. 
+    'rad_scan' is the given scanning length from the edge to the center to compute gray values on image.
+    """
+    if rad_scan == 0 or image is None:
+        return None
+    signs = []
+    for i in range(len(l_points)):
+        sign = get_edge_sign(l_points[i], l_center[i], image, rad_scan)
+        signs.append(sign)
+    return signs
+
 # Function to determine if two circles can be considered as the same
 def are_assimilables(c1:tuple, r1:float, c2:tuple, r2:float, error:float=0.05) -> bool:
     """
@@ -593,72 +633,38 @@ def are_assimilables(c1:tuple, r1:float, c2:tuple, r2:float, error:float=0.05) -
     (c1, r1): center and radius of first circle ; (c2, r2): center and radius of the second one.
     """
     dr_max = error * min(r1,r2)
-    assimilables = np.sqrt(np.sum((c1-c2)**2)) < dr_max and np.abs(r1-r2) < dr_max
+    assimilables = np.sqrt(np.sum(np.subtract(c1,c2)**2)) < dr_max and np.abs(r1-r2) < dr_max
     return assimilables
 
 # Function to merge circles which can be considered as the same
-def merge_close_circles(l_points:list, l_center:list|np.ndarray, l_radius:list|np.ndarray, error:float=0.05) -> Tuple[list, np.ndarray, np.ndarray]:
+def merge_close_circles(l_points:list, l_center:list|np.ndarray, l_radius:list|np.ndarray, error:float=0.05, edge_signs:list|None=None) -> Tuple[list, np.ndarray, np.ndarray, list|None]:
     """
-    Merges circles which can be considered as the same one, given an error value (error).
-    """
-    L_POINTS = list(l_points)
-    L_CENTER = list(l_center)
-    L_RADIUS = list(l_radius)
-    L_P = []
-    L_C = []
-    L_R = []
-    i = 0
-    while i < len(L_CENTER):
-        l_same = []
-        for j in range(len(L_CENTER)):
-            if i!=j and are_assimilables(L_CENTER[j], L_RADIUS[j], L_CENTER[i], L_RADIUS[i], error):
-                l_same.append(j)
-        if len(l_same)==0:
-            L_P.append(np.asarray(L_POINTS[i]))
-            L_C.append(L_CENTER[i])
-            L_R.append(L_RADIUS[i])
-        else:
-            l_p = L_POINTS[i]
-            for k in range(len(l_same)):
-                lpk = L_POINTS[l_same[k]]
-                l_p = np.concatenate((l_p,lpk), axis=0)
-            ctr, rad = get_lse_circle(l_p)
-            L_P.append(l_p)
-            L_C.append(ctr)
-            L_R.append(rad)
-            while len(l_same) != 0:
-                u = np.argmax(l_same)
-                v = l_same.pop(u)
-                L_POINTS.pop(v)
-                L_CENTER.pop(v)
-                L_RADIUS.pop(v)
-        i+=1
-    return L_P, np.asarray(L_C), np.asarray(L_R)
-
-# Function to merge circles whose segments can be considered as being on other circles
-def merge_on_circles(l_points:list, l_center:list|np.ndarray, l_radius:list|np.ndarray, d_pxl:float=8) -> Tuple[list, np.ndarray, np.ndarray]:
-    """
-    Merges circles whose segments can be considered as being on other circles, given a pixel delta value (d_pxl).
+    Merges circles which can be considered as the same one, given an error value (error). 
+    'edge_signs' aims to insure that circle segments have the same luminosity gradient sign from outside to inside their circle.
     """
     L_POINTS = list(l_points)
     L_CENTER = list(l_center)
     L_RADIUS = list(l_radius)
+    if edge_signs is not None:
+        edge_signs = list(edge_signs)
     s = 0
     sort_idx = list(np.argsort(L_RADIUS)) # sorted by radius
     while s < len(sort_idx):
         i = sort_idx[s]
         is_confused = False
-        lp = L_POINTS[i]
-        cc = L_CENTER[i]
-        mean_set = np.mean(lp,axis=0)
+        pi = L_POINTS[i]
+        ci = L_CENTER[i]
+        ri = L_RADIUS[i]
         for j in sort_idx:
             if j!=i:
-                ra = L_RADIUS[j]
-                ct = L_CENTER[j]
-                dis = np.abs( np.sqrt(np.sum((lp-ct)**2,axis=1)) - ra )
-                proj = np.sum( (mean_set-cc) * (mean_set-ct) )
-                if np.max(dis) < d_pxl and proj > 0:
-                    L_POINTS[j] = np.concatenate((L_POINTS[j],lp), axis=0)
+                pj = L_POINTS[j]
+                cj = L_CENTER[j]
+                rj = L_RADIUS[j]
+                assimilables = are_assimilables(cj, rj, ci, ri, error)
+                if edge_signs is not None:
+                    assimilables = assimilables and edge_signs[i] == edge_signs[j]
+                if assimilables:
+                    L_POINTS[j] = np.concatenate((pj,pi), axis=0)
                     L_CENTER[j], L_RADIUS[j] = get_lse_circle(L_POINTS[j])
                     is_confused = True
                     break
@@ -669,7 +675,79 @@ def merge_on_circles(l_points:list, l_center:list|np.ndarray, l_radius:list|np.n
     L_P = [L_POINTS[a] for a in sort_idx]
     L_C = [L_CENTER[a] for a in sort_idx]
     L_R = [L_RADIUS[a] for a in sort_idx]
-    return L_P, np.asarray(L_C), np.asarray(L_R)
+    if edge_signs is not None:
+        signs = [edge_signs[a] for a in sort_idx]
+        return L_P, np.asarray(L_C), np.asarray(L_R), signs
+    return L_P, np.asarray(L_C), np.asarray(L_R), None
+
+# Function to merge circles whose segments can be considered as being on other circles
+def merge_on_circles(l_points:list, l_center:list|np.ndarray, l_radius:list|np.ndarray, d_pxl:float=8, edge_signs:list|None=None) -> Tuple[list, np.ndarray, np.ndarray, list|None]:
+    """
+    Merges circles whose segments can be considered as being on other circles, given a pixel delta value (d_pxl). 
+    'edge_signs' aims to insure that circle segments have the same luminosity gradient sign from outside to inside their circle.
+    """
+    L_POINTS = list(l_points)
+    L_CENTER = list(l_center)
+    L_RADIUS = list(l_radius)
+    if edge_signs is not None:
+        edge_signs = list(edge_signs)
+    s = 0
+    sort_idx = list(np.argsort(L_RADIUS)) # sorted by radius
+    while s < len(sort_idx):
+        i = sort_idx[s]
+        is_confused = False
+        pi = L_POINTS[i]
+        ci = L_CENTER[i]
+        mean_set = np.mean(pi,axis=0)
+        for j in sort_idx:
+            if j!=i:
+                pj = L_POINTS[j]
+                cj = L_CENTER[j]
+                rj = L_RADIUS[j]
+                dis = np.abs(np.sqrt(np.sum((pi-cj)**2,axis=1)) - rj)
+                proj = np.sum( (mean_set-ci) * (mean_set-cj) )
+                if edge_signs is not None:
+                    proj = proj * np.sign(float(edge_signs[i]==edge_signs[j])-0.5)
+                if np.max(dis) < d_pxl and proj > 0:
+                    L_POINTS[j] = np.concatenate((pj,pi), axis=0)
+                    L_CENTER[j], L_RADIUS[j] = get_lse_circle(L_POINTS[j])
+                    is_confused = True
+                    break
+        if is_confused: # do remove
+            sort_idx.pop(s)
+        else: # do not remove
+            s+=1
+    L_P = [L_POINTS[a] for a in sort_idx]
+    L_C = [L_CENTER[a] for a in sort_idx]
+    L_R = [L_RADIUS[a] for a in sort_idx]
+    if edge_signs is not None:
+        signs = [edge_signs[a] for a in sort_idx]
+        return L_P, np.asarray(L_C), np.asarray(L_R), signs
+    return L_P, np.asarray(L_C), np.asarray(L_R), None
+
+# Function to remove circles for which the inside (center) is not brighter than the outside
+def remove_wrong_edge_grad_sign(l_points:list, l_center:list|np.ndarray, l_radius:list|np.ndarray, sign:int=1, edge_signs:list|None=None) -> Tuple[list, np.ndarray, np.ndarray, list|None]:
+    """
+    Removes circles for which the sign of the gray gradient from outside to inside the circle is of sign 'sign'.
+    If sign >0 (resp. <0), the inside (center) of the circle must be brighter (resp. darker) than the outside.
+    """
+    L_POINTS = list(l_points)
+    L_CENTER = list(l_center)
+    L_RADIUS = list(l_radius)
+    if edge_signs is None:
+        return L_POINTS, np.asarray(L_CENTER), np.asarray(L_RADIUS), None
+    edge_signs = list(edge_signs)
+    sign = np.sign(sign)
+    i=0
+    while i < len(L_POINTS):
+        if sign * edge_signs[i] < 0:
+            L_POINTS.pop(i)
+            L_CENTER.pop(i)
+            L_RADIUS.pop(i)
+            edge_signs.pop(i)
+        else:
+            i+=1
+    return L_POINTS, np.asarray(L_CENTER), np.asarray(L_RADIUS), edge_signs
 
 # Function to remove circles whose segments are the far from forming a good circle (they have a too high MSE)
 def remove_worst_circles(l_points:list, l_center:list|np.ndarray, l_radius:list|np.ndarray, max_error:float=2) -> Tuple[list, np.ndarray, np.ndarray]:
@@ -692,42 +770,6 @@ def remove_worst_circles(l_points:list, l_center:list|np.ndarray, l_radius:list|
             E += (d_x + d_y - r2)**2
         E = np.sqrt(E/len(lp))
         if E > r2 * max_error:
-            L_POINTS.pop(i)
-            L_CENTER.pop(i)
-            L_RADIUS.pop(i)
-        else:
-            i+=1
-    return L_POINTS, np.asarray(L_CENTER), np.asarray(L_RADIUS)
-
-# Function to remove circles for which the inside (center) is not brighter than the outside
-def remove_wrong_side(l_points:list, l_center:list|np.ndarray, l_radius:list|np.ndarray, image:np.ndarray, rad_scan:float=3) -> Tuple[list, np.ndarray, np.ndarray]:
-    """
-    Removes circles for which the inside (center) is not brighter than the outside in image, given a scanning radius (rad_scan).
-    """
-    L_POINTS = list(l_points)
-    L_CENTER = list(l_center)
-    L_RADIUS = list(l_radius)
-    i=0
-    rad_scan = int(np.ceil(rad_scan))
-    while i < len(L_POINTS):
-        ct = L_CENTER[i]
-        lp = L_POINTS[i]
-        int_value = 0
-        ext_value = 0
-        for k in range(len(lp)):
-            pt = lp[k]
-            vec_int = np.array([ct[0]-pt[0],ct[1]-pt[1]])
-            nor_vec = np.sqrt(np.sum(vec_int**2))
-            if nor_vec > 0:
-                vec_int /= nor_vec
-                for r in range(1,rad_scan+1):
-                    vec = np.round(r*vec_int).astype(int)
-                    pxr = image[pt[0]+vec[0], pt[1]+vec[1]]
-                    pxm = image[pt[0]-vec[0], pt[1]-vec[1]]
-                    int_value += pxr
-                    ext_value += pxm
-        #print("int: {}  |  ext: {}".format(int_value,ext_value))
-        if ext_value > int_value:
             L_POINTS.pop(i)
             L_CENTER.pop(i)
             L_RADIUS.pop(i)
@@ -777,6 +819,7 @@ def CAM_circles_2D(
         curvature_sensitivity:float=1.0, 
         circle_merging_power:float=1.0, 
         circle_accuracy_power:float=1.0, 
+        light_dependency:bool|float=True, 
         min_radius_ratio:float=0.01, 
         max_radius_ratio:float=0.50
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -791,6 +834,7 @@ def CAM_circles_2D(
     * curvature_sensitivity: power of curvature irregularity detection ;
     * circle_merging_power: power of the detection of similar circles ;
     * circle_accuracy_power: power of the selection of best circles ;
+    * light_dependency: if True, consider light variations as criteria ;
     * min_radius_ratio: ratio of the minimum circle radius allowed ;
     * max_radius_ratio: ratio of the maximum circle radius allowed.\n
 
@@ -798,31 +842,34 @@ def CAM_circles_2D(
 
     Returns
     -------
-    (L_CENTER, L_RADIUS), the couple of ordered lists of centers and radii of detected circles.
+    (L_CENTER, L_RADIUS), ordered lists of centers and radii of the detected circles.
     """
 
     ###########################
     ##### HYPERPARAMETERS #####
 
-    img_resize_ratio = resolution
-    sigma_preprocess = 1.0 * min(image.shape) / 1000
-    line_window_size = 20. * min(image.shape) / 1000
+    img_resize_ratio = resolution # pre-processing image resize ratio to get more precise results and reduce computation time
+    sigma_preprocess = 1.0 * min(image.shape) / 1000 # sigma value for Gaussian filter applied to input image before processing
+    line_window_size = 20. * min(image.shape) / 1000 # circular window diameter for the computation of the linear minimum MSE map
 
-    sigma_proba_maps = 2.0 * min(image.shape) / 1000
-    sigma_delta_maps = 3.5 * min(image.shape) / 1000
-    thresholding_idx = [[2,1],[2,1]]
+    sigma_proba_maps = 2.0 * min(image.shape) / 1000 # sigma value for Gaussian filter applied to the linear minimum MSE map (proba)
+    sigma_delta_maps = 3.5 * min(image.shape) / 1000 # sigma value for Gaussian filter applied to the map of differences to local max
+    thresholding_idx = [[2,1],[2,1]] # threshold arguments for proba map (first couple) and diff map (second), (nb_classes, num_class)
 
-    skelet_clean_pow = 0.5 * cleaning_power
-    bend_control_pow = 1.2 / curvature_sensitivity
+    skelet_clean_pow = 0.5 * cleaning_power # general cleaning power of the skeleton to get pure single connected point paths (segments)
+    bend_control_pow = 1.2 / curvature_sensitivity # sensitivity of the curvature irregularity detector: ratio for the controller's length
 
-    similar_circle_merge_pow = 0.6 * circle_merging_power
-    overlap_circle_merge_pow = 0.8 * circle_merging_power
-    lighty_side_scanning_pow = 0.2 * circle_accuracy_power
-    max_circle_error_allowed = 0.2 / circle_accuracy_power
+    similar_circle_merge_err = 0.8 * circle_merging_power # circle mixing power to merge more easily circles which are close to be the same
+    segm_on_circle_merge_pow = 0.8 * circle_merging_power # circle mixing power to merge more easily circles whose segments are on other circles
 
-    perim_size_prop = 0.08 * circle_accuracy_power
-    min_radius_prop = min_radius_ratio
-    max_radius_prop = max_radius_ratio
+    light_scanning_radius_merge = 0.3 * light_dependency # segments must have same light gradient from outside to inside their circle to be merged
+    light_scanning_radius_valid = 0.3 * light_dependency # objects in foreground must be lighter than in background (>0), or change sign (0 or <0)
+
+    max_circle_error_allowed = 0.3 / circle_accuracy_power # proportion of the maximum circle-error (circle-MSE) allowed for circles to be kept
+
+    perim_size_prop = 0.05 * circle_accuracy_power # proportion of the minimum number of pixels over the circle perimeter allowed to keep it
+    min_radius_prop = min_radius_ratio # minimum circle radius allowed (in pixels)
+    max_radius_prop = max_radius_ratio # maximum circle radius allowed (in pixels)
     
     ###########################
     ##### FUNCTION CORPUS #####
@@ -830,8 +877,8 @@ def CAM_circles_2D(
     # normalize image
     image = normalized(image, output_dtype=np.float64)
 
-    # add small noize to image (std=1e-5)
-    noize = ndimage.gaussian_filter(np.abs(np.random.normal(0, 1e-5, size=image.shape)), sigma_preprocess)
+    # add small noize to image (magnitude: 1e-5)
+    noize = ndimage.gaussian_filter(np.abs(np.random.normal(0, 1e-5, size=image.shape)), sigma_preprocess) # noize magnitude: 1e-5
     image = image + noize
 
     # blur and resize image
@@ -886,26 +933,30 @@ def CAM_circles_2D(
 
     # detect and delete bends from path_image through curvature analysis
     bends = get_bends(path_image, int(width*bend_control_pow))
-    remove_bends(path_image, bends, 2)
-    
+    remove_bends(path_image, bends, 2) # radius of the square window removed: 2
+
     # get all naive circles from prepared segments
     L_POINTS, L_CENTER, L_RADIUS = get_circles(path_image)
+
+    # get list of signs of the gradient from outside to inside the circle arcs
+    l_edge_signs = get_edge_signs(L_POINTS, L_CENTER, image, width*light_scanning_radius_merge)
     
-    # merge circles which are close to each other
-    L_POINTS, L_CENTER, L_RADIUS = merge_close_circles(L_POINTS, L_CENTER, L_RADIUS, similar_circle_merge_pow)
+    # merge circles which are close to each other - circles must have same light gradient from outside to inside, if light_scanning_radius != 0
+    L_POINTS, L_CENTER, L_RADIUS, l_edge_signs = merge_close_circles(L_POINTS, L_CENTER, L_RADIUS, similar_circle_merge_err, l_edge_signs)
     
-    # merge circles which coincide with others
-    L_POINTS, L_CENTER, L_RADIUS = merge_on_circles(L_POINTS, L_CENTER, L_RADIUS, width*overlap_circle_merge_pow)
+    # merge circles which coincide with others - circles must have same light gradient from outside to inside, if light_scanning_radius != 0
+    L_POINTS, L_CENTER, L_RADIUS, l_edge_signs = merge_on_circles(L_POINTS, L_CENTER, L_RADIUS, width*segm_on_circle_merge_pow, l_edge_signs)
     
-    # keep only circles which fit well enough to their segment(s) (l_points)
+    # keep only circles for which the inside is brighter than the outside - OPTIONAL: disable this filter with "light_dependency=False" or change sign!
+    if l_edge_signs is None and light_scanning_radius_valid != 0:
+        l_edge_signs = get_edge_signs(L_POINTS, L_CENTER, image, width*light_scanning_radius_valid)
+    L_POINTS, L_CENTER, L_RADIUS, _ = remove_wrong_edge_grad_sign(L_POINTS, L_CENTER, L_RADIUS, np.sign(light_scanning_radius_valid), l_edge_signs) # sign!!!
+    
+    # keep only circles which fit well enough their segment(s) in L_POINTS (i.e. segments must be close to circle arcs)
     L_POINTS, L_CENTER, L_RADIUS = remove_worst_circles(L_POINTS, L_CENTER, L_RADIUS, max_circle_error_allowed)
     
-    # keep only circles for which the inside is brighter than the outside, near their segment(s)
-    L_POINTS, L_CENTER, L_RADIUS = remove_wrong_side(L_POINTS, L_CENTER, L_RADIUS, image, width*lighty_side_scanning_pow)
-    
-    # keep only the circles repspecting some size and range properties
-    min_radius = min(image.shape) * min_radius_prop
-    max_radius = min(image.shape) * max_radius_prop
+    # keep only the circles repspecting some size and range properties (check function description)
+    min_radius, max_radius = min(image.shape) * np.asarray([min_radius_prop, max_radius_prop])
     _, L_CENTER, L_RADIUS = filter_by_characteristics(L_POINTS, L_CENTER, L_RADIUS, image.shape, perim_size_prop, min_radius, max_radius)
     
     # resize circles to the original image's size
