@@ -331,13 +331,16 @@ def show_circles(
 
         lc = np.round(lc).astype(int)
 
+        arg = np.argsort(-np.asarray(lr))
+
         for i in range(nlc):
+            a = arg[i]
 
             # Draw center of circle
             if center_thickness > 0:
 
                 ball = binary_ball(diameter=to_diameter(half_c_thickness), ndim=ndim)
-                where_ball = np.argwhere(ball) + np.round(lc[i]).astype(int) - half_c_thickness
+                where_ball = np.argwhere(ball) + np.round(lc[a]).astype(int) - half_c_thickness
                 out_of_bounds = ((where_ball < 0) + (where_ball >= image.shape[:ndim])).sum(axis=1, dtype=bool)
 
                 if np.prod(out_of_bounds) == 0:
@@ -346,10 +349,10 @@ def show_circles(
             
             # Draw border of circle
             if border_thickness > 0:
-                draw_circle(image, lc[i], lr[i], circle_thickness+2*border_thickness, border_color) # draw border
+                draw_circle(image, lc[a], lr[a], circle_thickness+2*border_thickness, border_color) # draw border
 
             # Draw circle itself
-            draw_circle(image, lc[i], lr[i], circle_thickness, circle_color) # draw circle
+            draw_circle(image, lc[a], lr[a], circle_thickness, circle_color) # draw circle
 
     show(image, title)
 
