@@ -924,7 +924,7 @@ def CAM_circles_2D(
     skeleton = clean_by_convolutionCheck(skeleton, width*skelet_clean_pow, 5)
     skeleton = point_types(skeletonize(skeleton+inter)) >= 3
     skeleton = clean_by_objectSize(skeleton, int(width*skelet_clean_pow*2))
-    skeleton = ndimage.binary_closing(skeleton, structure=binary_ball(int(width*skelet_clean_pow/2)))
+    skeleton = ndimage.binary_closing(skeleton, structure=binary_ball(max(1,int(width*skelet_clean_pow/2))))
     skeleton = skeletonize(skeleton)
 
     # keep only inner segments (connected paths)
