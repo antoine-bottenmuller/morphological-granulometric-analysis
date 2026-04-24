@@ -295,7 +295,7 @@ def point_types(skeleton:np.ndarray, eight_neighbours:bool=True) -> np.ndarray:
     * ==1 <=> isolated point
     * ==2 <=> end-line point
     * ==3 <=> middle-line point
-    * >=4 <=> intersection point\n
+    * \>=4 <=> intersection point\n
     Parameters:
     * skeleton: 2D binary image (bool) of edge skeleton ;
     * eight_neighbours: boolean for eight neighbour window (True) or four (False).\n
